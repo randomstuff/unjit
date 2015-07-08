@@ -21,33 +21,55 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
+#include <stdio.h>
+
 #include <cstring>
 
-#include <fstream>
 #include <string>
-#include <iostream>
-
-#include <sys/types.h>
 
 #include "unjit.hpp"
 
-int main(int argc, const char** argv)
+namespace unjit {
+
+Process::Process(pid_t pid) : pid_(pid)
 {
-  LLVMInitializeAllTargetInfos();
-  LLVMInitializeAllTargetMCs();
-  LLVMInitializeAllDisassemblers();
-  LLVMInitializeNativeDisassembler();
+  jit_symbols_.clear();
+  std::string filename =
+    std::string("/tmp/perf-") + std::to_string(this->pid_) + std::string(".map");
+  this->load_map_file(filename);
+}
 
-  pid_t pid = std::atoll(argv[1]);
-  unjit::Process process(pid);
-  unjit::Disassembler disassembler(process);
+Process::~Process()
+{
 
-  // Disassemble:
-  for (auto const& k : process.jit_symbols())
-    disassembler.disassemble(stdout, k.second);
+}
 
-  return 0;
+void Process::load_map_file(std::string const& map_file)
+{
+  unique_file file = unique_file(std::fopen(map_file.c_str(), "r"));
+  if (!file) {
+    std::fprintf(stderr, "Could not open file %s\n", map_file.c_str());
+    return;
+  }
+
+  size_t size = 256;
+  char* line = (char*) malloc(size);
+  while (getline(&line, &size, file.get()) >= 0) {
+    Symbol symbol;
+    char buffer[size];
+    if (sscanf(line, "%" SCNx64 " %" SCNx64 " %s", &symbol.start, &symbol.size, buffer) == 3) {
+      symbol.name = std::string(buffer);
+      this->jit_symbols_[symbol.start] = std::move(symbol);
+    }
+  }
+}
+
+const char* Process::lookup_symbol(uint64_t ReferenceValue)
+{
+  auto i = this->jit_symbols_.find(ReferenceValue);
+  if (i != this->jit_symbols_.end())
+    return i->second.name.c_str();
+  return NULL;
+}
+
 }

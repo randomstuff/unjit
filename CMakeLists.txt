@@ -4,7 +4,8 @@ project(unjit)
 find_package(LLVM ${LLVM_VERSION} REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 
-add_executable(unjit src/unjit.cpp)
+add_executable(unjit src/unjit.cpp src/Process.cpp src/Disassembler.cpp)
+add_definitions(-D_XOPEN_SOURCE=700)
 
 # llvm_map_components_to_libnames(llvm_libs support core mcdisassembler native)
 # target_link_libraries(unjit ${llvm_libs})
