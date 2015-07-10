@@ -23,6 +23,8 @@ THE SOFTWARE.
 
 #include <sys/types.h>
 
+#include <cstdlib> // atoll
+
 #include <llvm-c/Target.h>
 #include <llvm-c/Disassembler.h>
 
