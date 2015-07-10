@@ -21,15 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-
-#include <fstream>
-#include <string>
-#include <iostream>
-
 #include <sys/types.h>
 
 #include "unjit.hpp"
@@ -47,7 +38,7 @@ int main(int argc, const char** argv)
 
   // Disassemble:
   for (auto const& k : process.jit_symbols())
-    disassembler.disassemble(stdout, k.second);
+    disassembler.disassemble(std::cout, k.second);
 
   return 0;
 }

@@ -21,11 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <stdio.h>
-
 #include <cstring>
 
 #include <string>
+#include <fstream>
+#include <iostream>
 
 #include "unjit.hpp"
 
@@ -46,19 +46,17 @@ Process::~Process()
 
 void Process::load_map_file(std::string const& map_file)
 {
-  unique_file file = unique_file(std::fopen(map_file.c_str(), "r"));
-  if (!file) {
-    std::fprintf(stderr, "Could not open file %s\n", map_file.c_str());
-    return;
-  }
+  std::ifstream file(map_file);
 
   size_t size = 256;
-  char* line = (char*) malloc(size);
-  while (getline(&line, &size, file.get()) >= 0) {
+  std::string line;
+  while (getline(file, line)) {
     Symbol symbol;
-    char buffer[size];
-    if (sscanf(line, "%" SCNx64 " %" SCNx64 " %s", &symbol.start, &symbol.size, buffer) == 3) {
-      symbol.name = std::string(buffer);
+    int name_index;
+    if (sscanf(line.c_str(), "%" SCNx64 " %" SCNx64 "%n", &symbol.start, &symbol.size, &name_index) == 2) {
+      while (name_index < line.size() && line[name_index] == ' ')
+        ++name_index;
+      symbol.name = std::string(line.c_str() + name_index);
       this->jit_symbols_[symbol.start] = std::move(symbol);
     }
   }

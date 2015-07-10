@@ -24,30 +24,18 @@ THE SOFTWARE.
 #ifndef UNJIT_UNJIT_HPP
 #define UNJIT_UNJIT_HPP
 
-#include <cstdio>      // FILE*, fclose()
-
 #include <sys/types.h> // pid_t
 
 #include <cinttypes>  // uint64_t
 #include <string>
 #include <memory>     // unique_ptr
 #include <unordered_map>
+#include <iostream>
 
 #include <llvm-c/Target.h>
 #include <llvm-c/Disassembler.h>
 
 namespace unjit {
-
-// RAII for FILE*:
-class fcloser {
-public:
-  void operator()(std::FILE* f) const
-  {
-    fclose(f);
-  }
-};
-
-typedef std::unique_ptr<std::FILE, fcloser> unique_file;
 
 struct Symbol {
   std::uint64_t start;
@@ -85,8 +73,8 @@ private:
 public:
   Disassembler(Process& process);
   ~Disassembler();
-  void disassemble(std::FILE *file, uint8_t *code, size_t size, uint64_t pc);
-  void disassemble(std::FILE* file, Symbol const& symbol);
+  void disassemble(std::ostream& stream, uint8_t *code, size_t size, uint64_t pc);
+  void disassemble(std::ostream& stream, Symbol const& symbol);
 };
 
 }

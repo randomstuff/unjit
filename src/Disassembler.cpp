@@ -26,6 +26,8 @@ THE SOFTWARE.
 #include <sys/uio.h>
 
 #include <stdexcept>
+#include <iostream>
+#include <iomanip>
 
 #include <llvm-c/Target.h>
 #include <llvm-c/Disassembler.h>
@@ -67,7 +69,7 @@ Disassembler::~Disassembler()
   LLVMDisasmDispose(this->disassembler_);
 }
 
-void Disassembler::disassemble(std::FILE *file, uint8_t *code, size_t size, uint64_t pc)
+void Disassembler::disassemble(std::ostream& stream, uint8_t *code, size_t size, uint64_t pc)
 {
   char temp[256];
   while (size) {
@@ -75,14 +77,15 @@ void Disassembler::disassemble(std::FILE *file, uint8_t *code, size_t size, uint
       code, size, pc, temp, sizeof(temp));
     if (c == 0)
       return;
-    std::fprintf(file, "%016" PRIx64 "%s\n", pc, temp);
+    stream << std::setfill('0') << std::setw(16) << std::hex << pc
+      << " " << temp << '\n';
     size -= c;
     code += c;
     pc += c;
   }
 }
 
-void Disassembler::disassemble(std::FILE* file, Symbol const& symbol)
+void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
 {
   uint8_t buffer[symbol.size];
   struct iovec local, remote;
@@ -95,13 +98,13 @@ void Disassembler::disassemble(std::FILE* file, Symbol const& symbol)
 
   if (process_vm_readv(this->process_->pid(), &local, 1, &remote, 1, 0) != symbol.size) {
     // TODO, return/throw error
-    std::fprintf(stderr, "Error, could not read the instructions for %s\n", symbol.name.c_str());
+    std::cerr << "Error, could not read the instructions for " << symbol.name << '\n';
     return;
   }
 
-  std::fprintf(file, "%s\n", symbol.name.c_str());
-  this->disassemble(file, buffer, symbol.size, symbol.start);
-  std::fprintf(file, "\n");
+  stream << symbol.name << '\n';
+  this->disassemble(stream, buffer, symbol.size, symbol.start);
+  stream << '\n';
 }
 
 }
