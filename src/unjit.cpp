@@ -23,6 +23,9 @@ THE SOFTWARE.
 
 #include <sys/types.h>
 
+#include <llvm-c/Target.h>
+#include <llvm-c/Disassembler.h>
+
 #include "unjit.hpp"
 
 int main(int argc, const char** argv)
