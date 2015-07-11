@@ -31,6 +31,7 @@ THE SOFTWARE.
 #include <memory>     // unique_ptr
 #include <unordered_map>
 #include <iostream>
+#include <vector>
 
 #include <llvm-c/Target.h>
 #include <llvm-c/Disassembler.h>
@@ -43,14 +44,27 @@ struct Symbol {
   std::string name;
 };
 
+struct Vma {
+  uint64_t start, end;
+  int prot; // PROT_EXEC, PROT_READ, PROT_WRITE, PROT_NONE
+  int flags; // MAP_SHARED, MAP_PRIVATE
+  uint64_t offset;
+  std::string name;
+};
+
+std::ostream& operator<<(std::ostream& stream, Vma const& vma);
+
 class Process {
 private:
   pid_t pid_;
   std::unordered_map<std::uint64_t, Symbol> jit_symbols_;
+  std::vector<Vma> vmas_;
 
 public:
   Process(pid_t pid);
   ~Process();
+  void load_vm_maps();
+  void load_map_file();
   void load_map_file(std::string const& map_file);
   const char* lookup_symbol(uint64_t ReferenceValue);
 
@@ -62,6 +76,11 @@ public:
   pid_t pid()
   {
     return pid_;
+  }
+
+  std::vector<Vma> vm_maps()
+  {
+    return vmas_;
   }
 
 };

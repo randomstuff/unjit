@@ -21,32 +21,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <sys/types.h>
+#include <string>
+#include <iomanip>
 
-#include <cstdlib> // atoll
-
-#include <llvm-c/Target.h>
-#include <llvm-c/Disassembler.h>
+#include <sys/mman.h>
 
 #include "unjit.hpp"
 
-int main(int argc, const char** argv)
+namespace unjit {
+
+std::ostream& operator<<(std::ostream& stream, Vma const& vma)
 {
-  LLVMInitializeAllTargetInfos();
-  LLVMInitializeAllTargetMCs();
-  LLVMInitializeAllDisassemblers();
-  LLVMInitializeNativeDisassembler();
+  stream << std::setfill('0') << std::setw(16) << std::hex
+    << vma.start << "-" << vma.end
+    << " " << (vma.prot & PROT_READ ? 'r' : '-')
+    << (vma.prot & PROT_WRITE ? 'w' : '-')
+    << (vma.prot & PROT_EXEC ? 'x' : '-')
+    << (vma.flags & MAP_PRIVATE ? 'p' : '-')
+    << ' ' << vma.offset
+    << ' ' << '-'
+    << ' ' << '-'
+    << ' ' << '-'
+    << ' ' << vma.name
+    << '\n';
+  return stream;
+}
 
-  pid_t pid = std::atoll(argv[1]);
-  unjit::Process process(pid);
-  process.load_vm_maps();
-  process.load_map_file();
-
-  unjit::Disassembler disassembler(process);
-
-  // Disassemble:
-  for (auto const& k : process.jit_symbols())
-    disassembler.disassemble(std::cout, k.second);
-
-  return 0;
 }

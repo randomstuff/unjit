@@ -26,6 +26,9 @@ THE SOFTWARE.
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <regex>
+
+#include <sys/mman.h>
 
 #include "unjit.hpp"
 
@@ -33,15 +36,66 @@ namespace unjit {
 
 Process::Process(pid_t pid) : pid_(pid)
 {
-  jit_symbols_.clear();
-  std::string filename =
-    std::string("/tmp/perf-") + std::to_string(this->pid_) + std::string(".map");
-  this->load_map_file(filename);
 }
 
 Process::~Process()
 {
 
+}
+
+void Process::load_vm_maps()
+{
+  vmas_.clear();
+  std::string filename =
+    std::string("/proc/") + std::to_string(this->pid_) + std::string("/maps");
+  std::regex map_regex(
+    // Start-end:
+    "^([0-9a-f]+)-([0-9a-f]+)"
+    // Flags:
+    " ([r-])([w-])([x-])([p-])"
+    // Offset:
+    " ([0-9a-f]+)"
+    // Device (major/minor):
+    " [0-9a-f]+:[0-9a-f]+"
+    // icode:
+    " [0-9]*"
+    // File name:
+    " *([^ ]*)$"
+  );
+  std::ifstream file(filename);
+
+  std::string line;
+  std::smatch match;
+
+  while (getline(file, line)) {
+    if (!std::regex_search(line, match, map_regex))
+      continue;
+    Vma vma;
+    vma.start  = strtoll(match[1].str().c_str(), nullptr, 16);
+    vma.end    = strtoll(match[2].str().c_str(), nullptr, 16);
+    vma.prot   = 0;
+    if (match[3].str()[0] == 'r')
+      vma.prot |= PROT_READ;
+    if (match[4].str()[0] == 'w')
+      vma.prot |= PROT_WRITE;
+    if (match[5].str()[0] == 'x')
+      vma.prot |= PROT_EXEC;
+    if (match[6].str()[0] == 'p')
+      vma.flags = MAP_PRIVATE;
+    else
+      vma.flags = MAP_SHARED;
+    vma.offset = strtoll(match[7].str().c_str(), nullptr, 16);
+    vma.name   = match[8];
+    std::cerr << vma;
+    this->vmas_.push_back(std::move(vma));
+  }
+}
+
+void Process::load_map_file()
+{
+  std::string filename =
+    std::string("/tmp/perf-") + std::to_string(this->pid_) + std::string(".map");
+  this->load_map_file(filename);
 }
 
 void Process::load_map_file(std::string const& map_file)
