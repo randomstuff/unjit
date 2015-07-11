@@ -40,11 +40,11 @@ int main(int argc, const char** argv)
   pid_t pid = std::atoll(argv[1]);
   unjit::Process process(pid);
   process.load_vm_maps();
+  process.load_modules();
   process.load_map_file();
 
   unjit::Disassembler disassembler(process);
 
-  // Disassemble:
   for (auto const& k : process.jit_symbols())
     disassembler.disassemble(std::cout, k.second);
 

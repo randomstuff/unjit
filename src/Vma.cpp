@@ -43,7 +43,7 @@ std::ostream& operator<<(std::ostream& stream, Vma const& vma)
     << ' ' << '-'
     << ' ' << '-'
     << ' ' << vma.name
-    << '\n';
+    << '\n' << std::setw(0) << std::dec;
   return stream;
 }
 

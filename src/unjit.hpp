@@ -39,7 +39,7 @@ THE SOFTWARE.
 namespace unjit {
 
 struct Symbol {
-  std::uint64_t start;
+  std::uint64_t value;
   std::uint64_t size;
   std::string name;
 };
@@ -54,16 +54,36 @@ struct Vma {
 
 std::ostream& operator<<(std::ostream& stream, Vma const& vma);
 
+struct Module {
+  std::string name;
+  std::unordered_map<std::uint64_t, Symbol> symbols;
+  bool absolute_address;
+};
+
+std::shared_ptr<Module> load_module(std::string const& name);
+
+struct ModuleArea {
+  std::uint64_t start, end;
+  std::shared_ptr<Module> module;
+
+  bool contains(std::uint64_t address) const
+  {
+    return address >= this->start && address < this->end;
+  }
+};
+
 class Process {
 private:
   pid_t pid_;
   std::unordered_map<std::uint64_t, Symbol> jit_symbols_;
   std::vector<Vma> vmas_;
+  std::vector<ModuleArea> areas_;
 
 public:
   Process(pid_t pid);
   ~Process();
   void load_vm_maps();
+  void load_modules();
   void load_map_file();
   void load_map_file(std::string const& map_file);
   const char* lookup_symbol(uint64_t ReferenceValue);
@@ -81,6 +101,14 @@ public:
   std::vector<Vma> vm_maps()
   {
     return vmas_;
+  }
+
+  ModuleArea const* find_module_area(std::uint64_t address) const
+  {
+    for (ModuleArea const& area : areas_)
+      if (area.contains(address))
+        return &area;
+    return nullptr;
   }
 
 };

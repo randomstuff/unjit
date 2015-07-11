@@ -93,7 +93,7 @@ void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
   local.iov_base = buffer;
   local.iov_len = symbol.size;
 
-  remote.iov_base = (void*) symbol.start;
+  remote.iov_base = (void*) symbol.value;
   remote.iov_len = symbol.size;
 
   if (process_vm_readv(this->process_->pid(), &local, 1, &remote, 1, 0) != symbol.size) {
@@ -103,7 +103,7 @@ void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
   }
 
   stream << symbol.name << '\n';
-  this->disassemble(stream, buffer, symbol.size, symbol.start);
+  this->disassemble(stream, buffer, symbol.size, symbol.value);
   stream << '\n';
 }
 

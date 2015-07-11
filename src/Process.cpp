@@ -86,8 +86,33 @@ void Process::load_vm_maps()
       vma.flags = MAP_SHARED;
     vma.offset = strtoll(match[7].str().c_str(), nullptr, 16);
     vma.name   = match[8];
-    std::cerr << vma;
     this->vmas_.push_back(std::move(vma));
+  }
+}
+
+void Process::load_modules()
+{
+  this->areas_.clear();
+  size_t n = this->vmas_.size();
+  for (size_t i = 0; i != n; ++ i) {
+
+    Vma const& vma = this->vmas_[i];
+    if (vma.name.empty() || vma.name[0] == '[')
+      continue;
+
+    // Find the end of the module:
+    do { ++i; } while (i != n && this->vmas_[i].name == vma.name);
+    if (this->vmas_[i].name.empty() && i != n)
+      ++i;
+    std::uint64_t end = this->vmas_[i - 1].end;
+
+    std::shared_ptr<Module> module = load_module(vma.name);
+
+    ModuleArea area;
+    area.start = vma.start;
+    area.end = end;
+    area.module = std::move(module);
+    this->areas_.push_back(std::move(area));
   }
 }
 
@@ -107,20 +132,31 @@ void Process::load_map_file(std::string const& map_file)
   while (getline(file, line)) {
     Symbol symbol;
     int name_index;
-    if (sscanf(line.c_str(), "%" SCNx64 " %" SCNx64 "%n", &symbol.start, &symbol.size, &name_index) == 2) {
+    if (sscanf(line.c_str(), "%" SCNx64 " %" SCNx64 "%n", &symbol.value, &symbol.size, &name_index) == 2) {
       while (name_index < line.size() && line[name_index] == ' ')
         ++name_index;
       symbol.name = std::string(line.c_str() + name_index);
-      this->jit_symbols_[symbol.start] = std::move(symbol);
+      this->jit_symbols_[symbol.value] = std::move(symbol);
     }
   }
 }
 
-const char* Process::lookup_symbol(uint64_t ReferenceValue)
+const char* Process::lookup_symbol(std::uint64_t ReferenceValue)
 {
-  auto i = this->jit_symbols_.find(ReferenceValue);
-  if (i != this->jit_symbols_.end())
-    return i->second.name.c_str();
+  {
+    auto i = this->jit_symbols_.find(ReferenceValue);
+    if (i != this->jit_symbols_.end())
+      return i->second.name.c_str();
+  }
+
+  unjit::ModuleArea const* area = this->find_module_area(ReferenceValue);
+  if (area) {
+    std::uint64_t relative_address =
+      area->module->absolute_address ? ReferenceValue : ReferenceValue - area->start;
+    auto i = area->module->symbols.find(relative_address);
+    if (i != this->jit_symbols_.end())
+      return i->second.name.c_str();
+  }
   return NULL;
 }
 
