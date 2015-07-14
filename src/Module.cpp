@@ -32,23 +32,6 @@ THE SOFTWARE.
 
 namespace unjit {
 
-struct FileDescriptor {
-private:
-  int fd_;
-public:
-  explicit FileDescriptor(int fd) : fd_(fd) {}
-  ~FileDescriptor()
-  {
-    close(fd_);
-  }
-  FileDescriptor(FileDescriptor&) = delete;
-  FileDescriptor& operator=(FileDescriptor&) = delete;
-  operator int() const
-  {
-    return fd_;
-  }
-};
-
 class elf_deleter {
 public:
   void operator()(Elf* elf) const

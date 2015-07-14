@@ -33,10 +33,53 @@ THE SOFTWARE.
 #include <iostream>
 #include <vector>
 
+#include <unistd.h>
+
 #include <llvm-c/Target.h>
 #include <llvm-c/Disassembler.h>
 
 namespace unjit {
+
+struct FileDescriptor {
+private:
+  int fd_;
+public:
+  FileDescriptor() : fd_(-1) {}
+  explicit FileDescriptor(int fd) : fd_(fd) {}
+  ~FileDescriptor()
+  {
+    this->close();
+  }
+
+  FileDescriptor(FileDescriptor&) = delete;
+  FileDescriptor& operator=(FileDescriptor&) = delete;
+
+  FileDescriptor(FileDescriptor&& that)
+  {
+    this->close();
+    this->fd_ = that.fd_;
+    that.fd_ = -1;
+  }
+  FileDescriptor& operator=(FileDescriptor&& that)
+  {
+    this->close();
+    this->fd_ = that.fd_;
+    that.fd_ = -1;
+    return *this;
+  }
+
+  operator int() const
+  {
+    return fd_;
+  }
+  void close()
+  {
+    if (fd_ >= 0) {
+      ::close(fd_);
+      fd_ = -1;
+    }
+  }
+};
 
 struct Symbol {
   std::uint64_t value;
