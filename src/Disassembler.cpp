@@ -78,7 +78,7 @@ void Disassembler::disassemble(std::ostream& stream, uint8_t *code, size_t size,
     if (c == 0)
       return;
     stream << std::setfill('0') << std::setw(16) << std::hex << pc
-      << " " << temp << '\n';
+      << ":\t" << temp << '\n';
     size -= c;
     code += c;
     pc += c;
@@ -113,7 +113,7 @@ void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
     return;
   }
 
-  stream << symbol.name << '\n';
+  stream << std::hex << symbol.value << '<' << symbol.name << ">\n";
   this->disassemble(stream, buffer, symbol.size, symbol.value);
   stream << '\n';
 }
