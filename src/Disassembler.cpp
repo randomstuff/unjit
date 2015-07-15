@@ -85,6 +85,17 @@ void Disassembler::disassemble(std::ostream& stream, uint8_t *code, size_t size,
   }
 }
 
+void Disassembler::disassemble(std::ostream& stream, std::uint64_t start, std::uint64_t stop)
+{
+  Symbol symbol;
+  symbol.size = stop - start;
+  symbol.value = start;
+  const char* name = process_->lookup_symbol(start);
+  if (name)
+    symbol.name = name;
+  disassemble(stream, symbol);
+}
+
 void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
 {
   uint8_t buffer[symbol.size];

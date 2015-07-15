@@ -15,5 +15,7 @@ add_definitions(-D_XOPEN_SOURCE=700)
 
 target_link_libraries(unjit LLVM-${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR})
 target_link_libraries(unjit elf)
+target_link_libraries(unjit boost_program_options)
+
 set_property(TARGET unjit PROPERTY CXX_STANDARD 11)
 set_property(TARGET unjit PROPERTY CXX_STANDARD_REQUIRED ON)
