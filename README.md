@@ -1,11 +1,34 @@
-# Disassemble JITed code
+# unjit
+
+## Overview
+
+### Features
+
+* disassemble code from a living process;
+
+* based on LLVM disassembler;
+
+* by default disassmble all (JITed) subprograms found in `/tmp/perf-$pid.map`;
+
+* symbolication of JIT-ed symbols using `/tmp/perf-$pid.map`;
+
+* symbolication of AOT symbols using ELF `SHT_SYMTAB` and `SHT_DYNSYM` sections;
+
+* does not `ptrace`, does not stop the process;
+
+* output similar to the output of `objdump` and compatible with
+  what Linux `perf` expects.
+
+### Compatibility
+
+* currently working on Linux 3.2 (`process_vm_readv()`) and a suitable libc
 
 ## Usage
 
 ### Basic usage
 
 ~~~sh
-unjit $pid > dis.txt
+unjit -p $pid > dis.txt
 ~~~
 
  1. Find the JIT-ed function from a process from `/tmp/perf-$pid.map`;
@@ -14,21 +37,15 @@ unjit $pid > dis.txt
 
  3. Disassemble them to stdout.
 
-## Advanced usage
+### Using with perf
 
 ~~~sh
-cat /tmp/perf-$pid.map | grep ^foo | unjit $pid - > dis.txt
+perf top -p $pid --objdump ./perfobjdump
 ~~~
 
-### Features
+## Discussion
 
- * based on LLVM disassembler;
-
- * symbolication of JIT-ed symbols;
-
- * does not `ptrace`, stop the process.
-
-### About `/tmp/perf-$pid.map`
+### Linux `perf` map (`/tmp/perf-$pid.map`)
 
 The `/tmp/perf-$pid.map` is a file used by JIT compilers to tell Linux
 perf the location and name of JITed subprograms. The format is:
@@ -46,20 +63,12 @@ Example:
 
 ## Roadmap
 
- * compile on systems without `process_vm_readv`;
+Without any specific order:
 
- * read symbols from ELF dynamic sections and DWARF debug
-   informations;
+ * read symbols from DWARF (optional);
 
- * handle other means for receiving the JITed subprograms
-   informations,
+ * load DWARF info from a separate file;
 
-   * GDB JIT infrastructure (`__jit_debug_register_code`);
-
- * proper CLI argument parsing;
-
- * autodetect non-native targets;
-
- * do not hardcode the CPU model;
+ * do not hardcode the CPU model (CLI option);
 
  * select the native CPU model by default.
