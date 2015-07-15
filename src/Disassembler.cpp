@@ -98,10 +98,12 @@ void Disassembler::disassemble(std::ostream& stream, std::uint64_t start, std::u
 
 void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
 {
-  uint8_t buffer[symbol.size];
+  if (this->buffer_.size() < symbol.size)
+    this->buffer_.resize(symbol.size);
+
   struct iovec local, remote;
 
-  local.iov_base = buffer;
+  local.iov_base = this->buffer_.data();
   local.iov_len = symbol.size;
 
   remote.iov_base = (void*) symbol.value;
@@ -114,7 +116,7 @@ void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
   }
 
   stream << std::hex << symbol.value << '<' << symbol.name << ">\n";
-  this->disassemble(stream, buffer, symbol.size, symbol.value);
+  this->disassemble(stream, this->buffer_.data(), symbol.size, symbol.value);
   stream << '\n';
 }
 

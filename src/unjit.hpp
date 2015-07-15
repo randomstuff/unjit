@@ -160,6 +160,7 @@ class Disassembler {
 private:
   Process* process_;
   LLVMDisasmContextRef disassembler_;
+  std::vector<std::uint8_t> buffer_;
 public:
   Disassembler(Process& process);
   ~Disassembler();
