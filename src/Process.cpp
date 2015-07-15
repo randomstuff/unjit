@@ -60,7 +60,7 @@ void Process::load_vm_maps()
     // icode:
     " [0-9]*"
     // File name:
-    " *([^ ]*)$"
+    " *(.*)$"
   );
   std::ifstream file(filename);
 
