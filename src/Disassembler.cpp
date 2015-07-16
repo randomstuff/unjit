@@ -90,6 +90,8 @@ void Disassembler::disassemble(std::ostream& stream, const char* name, std::uint
 {
   if (this->buffer_.size() < size)
     this->buffer_.resize(size);
+  if (size == 0)
+    return;
 
   struct iovec local, remote;
 
