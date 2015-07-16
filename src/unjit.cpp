@@ -120,9 +120,9 @@ int main(int argc, const char** argv)
   unjit::Disassembler disassembler(process);
   if (config.start == 0 && config.stop == 0) {
     for (auto const& k : process.jit_symbols())
-      disassembler.disassemble(std::cout, k.second);
+      disassembler.disassemble(std::cout, k.second.value, k.second.size);
   } else {
-    disassembler.disassemble(std::cout, config.start, config.stop);
+    disassembler.disassemble(std::cout, config.start, config.stop - config.start);
   }
 
   return 0;

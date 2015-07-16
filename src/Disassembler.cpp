@@ -69,8 +69,9 @@ Disassembler::~Disassembler()
   LLVMDisasmDispose(this->disassembler_);
 }
 
-void Disassembler::disassemble(std::ostream& stream, uint8_t *code, size_t size, uint64_t pc)
+void Disassembler::disassemble_code(std::ostream& stream, uint8_t *code, std::uint64_t start, std::size_t size)
 {
+  std::uint64_t pc = start;
   char temp[256];
   while (size) {
     size_t c = LLVMDisasmInstruction(this->disassembler_,
@@ -85,39 +86,34 @@ void Disassembler::disassemble(std::ostream& stream, uint8_t *code, size_t size,
   }
 }
 
-void Disassembler::disassemble(std::ostream& stream, std::uint64_t start, std::uint64_t stop)
+void Disassembler::disassemble(std::ostream& stream, const char* name, std::uint64_t start, std::uint64_t size)
 {
-  Symbol symbol;
-  symbol.size = stop - start;
-  symbol.value = start;
-  const char* name = process_->lookup_symbol(start);
-  if (name)
-    symbol.name = name;
-  disassemble(stream, symbol);
-}
-
-void Disassembler::disassemble(std::ostream& stream, Symbol const& symbol)
-{
-  if (this->buffer_.size() < symbol.size)
-    this->buffer_.resize(symbol.size);
+  if (this->buffer_.size() < size)
+    this->buffer_.resize(size);
 
   struct iovec local, remote;
 
   local.iov_base = this->buffer_.data();
-  local.iov_len = symbol.size;
+  local.iov_len = size;
 
-  remote.iov_base = (void*) symbol.value;
-  remote.iov_len = symbol.size;
+  remote.iov_base = (void*) start;
+  remote.iov_len = size;
 
-  if (process_vm_readv(this->process_->pid(), &local, 1, &remote, 1, 0) != symbol.size) {
+  if (process_vm_readv(this->process_->pid(), &local, 1, &remote, 1, 0) != size) {
     // TODO, return/throw error
-    std::cerr << "Error, could not read the instructions for " << symbol.name << '\n';
+    std::cerr << "Error, could not read the instructions for " << name << '\n';
     return;
   }
 
-  stream << std::hex << symbol.value << '<' << symbol.name << ">\n";
-  this->disassemble(stream, this->buffer_.data(), symbol.size, symbol.value);
+  stream << std::hex << start << '<' << name << ">\n";
+  this->disassemble_code(stream, this->buffer_.data(), start, size);
   stream << '\n';
+}
+
+void Disassembler::disassemble(std::ostream& stream, std::uint64_t start, std::uint64_t size)
+{
+  const char* name = process_->lookup_symbol(start);
+  disassemble(stream, name ? name : "_" , start, size);
 }
 
 }

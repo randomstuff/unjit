@@ -164,10 +164,10 @@ private:
 public:
   Disassembler(Process& process);
   ~Disassembler();
-  void disassemble(std::ostream& stream, Symbol const& symbol);
+  void disassemble(std::ostream& stream, const char* name, std::uint64_t start, std::uint64_t size);
   void disassemble(std::ostream& stream, std::uint64_t start, std::uint64_t stop);
 private:
-  void disassemble(std::ostream& stream, uint8_t *code, size_t size, uint64_t pc);
+  void disassemble_code(std::ostream& stream, uint8_t *code, std::uint64_t start, std::size_t size);
 };
 
 }
