@@ -105,7 +105,7 @@ void Disassembler::disassemble(std::ostream& stream, const char* name, std::uint
     return;
   }
 
-  stream << std::hex << start << '<' << name << ">\n";
+  stream << std::hex << start << " <" << name << ">\n";
   this->disassemble_code(stream, this->buffer_.data(), start, size);
   stream << '\n';
 }
