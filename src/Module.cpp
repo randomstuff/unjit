@@ -75,62 +75,62 @@ static Elf64_Half elf_e_type(Elf *elf)
     return ET_NONE;
 }
 
-std::shared_ptr<Module> load_module(std::string const& name)
+Module load_module(std::uint64_t start, std::string const& name)
 {
+  Module module;
+
   // Init libelf:
   if (elf_version(EV_CURRENT) == EV_NONE) {
     std::cerr << "Elf version error\n";
-    return nullptr;
+    return std::move(module);
   }
 
   // Open the file:
   FileDescriptor fd(open(name.c_str(), O_RDONLY));
   if (fd < 0) {
     std::cerr << "Could not open file " << name << "\n";
-    return nullptr;
+    return std::move(module);
   }
   std::unique_ptr<Elf, elf_deleter> elf(elf_begin(fd, ELF_C_READ, nullptr));
-  if (!elf) {
-    std::cerr << "Could not open file " << name << " with libelf\n";
-    return nullptr;
-  }
+  if (!elf)
+    return std::move(module);
 
   // Check if it is a suitable ELF file:
   if (elf_kind(elf.get()) != ELF_K_ELF)
-    return nullptr;
-
-  std::shared_ptr<Module> module(new Module());
-  module->name = name;
+    return std::move(module);
 
   Elf64_Half e_type = elf_e_type(elf.get());
+  std::uint64_t offset;
   switch(e_type) {
   case ET_EXEC:
-    module->absolute_address = true;
+    offset = 0;
     break;
   case ET_DYN:
-    module->absolute_address = false;
+    offset = start;
     break;
   default:
-    return nullptr;
+    return std::move(module);
   }
 
   // Find SHT_SYMTAB ot SHT_DYNSYM (symbol table):
   Elf_Scn *symbol_scn = elf_scn_symbol(elf.get());
   if (!symbol_scn)
-    return nullptr;
+    return std::move(module);
   size_t symbol_index = elf_ndxscn(symbol_scn);
 
   Elf32_Shdr *shdr32 = elf32_getshdr(symbol_scn);
   Elf64_Shdr *shdr64 = elf64_getshdr(symbol_scn);
   if (!shdr32 && !shdr64)
-    return nullptr;
+    return std::move(module);
   Elf64_Word sh_link = shdr64 ? shdr64->sh_link : shdr32->sh_link;
   Elf64_Xword sh_entsize = shdr64 ? shdr64->sh_entsize : shdr32->sh_entsize;
   Elf64_Xword sh_size = shdr64 ? shdr64->sh_size : shdr32->sh_size;
 
   uint64_t sh_entry_count = sh_size / sh_entsize;
   if (!sh_entsize)
-    return nullptr;
+    return std::move(module);
+
+  module.name = name;
 
   // For each element in the symbol table (we skip the first element with
   // is always a NULL entry):
@@ -153,12 +153,13 @@ std::shared_ptr<Module> load_module(std::string const& name)
       continue;
 
     Symbol symbol;
-    symbol.value = st_value;
+    symbol.value = st_value + offset;
     symbol.size = st_size;
     symbol.name = std::string(symbol_name);
     if (st_type == STT_FUNC)
       symbol.flags |= SYMBOL_FLAG_CODE;
-    module->symbols[st_value] = std::move(symbol);
+
+    module.symbols[symbol.value] = std::move(symbol);
   }
 
   return std::move(module);

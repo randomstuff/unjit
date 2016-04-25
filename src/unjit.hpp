@@ -103,27 +103,16 @@ std::ostream& operator<<(std::ostream& stream, Vma const& vma);
 struct Module {
   std::string name;
   std::unordered_map<std::uint64_t, Symbol> symbols;
-  bool absolute_address;
 };
 
-std::shared_ptr<Module> load_module(std::string const& name);
-
-struct ModuleArea {
-  std::uint64_t start, end;
-  std::shared_ptr<Module> module;
-
-  bool contains(std::uint64_t address) const
-  {
-    return address >= this->start && address < this->end;
-  }
-};
+Module load_module(std::uint64_t start, std::string const& name);
 
 class Process {
 private:
   pid_t pid_;
   std::unordered_map<std::uint64_t, Symbol> jit_symbols_;
   std::vector<Vma> vmas_;
-  std::vector<ModuleArea> areas_;
+  std::vector<Module> modules_;
 
 public:
   Process(pid_t pid);
@@ -133,6 +122,7 @@ public:
   void load_map_file();
   void load_map_file(std::string const& map_file);
   const char* lookup_symbol(uint64_t ReferenceValue);
+  std::vector<Module> const& modules() const { return modules_; }
 
   std::unordered_map<std::uint64_t, Symbol> const& jit_symbols()
   {
@@ -149,11 +139,13 @@ public:
     return vmas_;
   }
 
-  ModuleArea const* find_module_area(std::uint64_t address) const
+  Symbol const* find_symbol(std::uint64_t address) const
   {
-    for (ModuleArea const& area : areas_)
-      if (area.contains(address))
-        return &area;
+    for (Module const& module : modules_) {
+      auto i = module.symbols.find(address);
+      if (i != module.symbols.end())
+        return &i->second;
+    }
     return nullptr;
   }
 

@@ -92,7 +92,7 @@ void Process::load_vm_maps()
 
 void Process::load_modules()
 {
-  this->areas_.clear();
+  this->modules_.clear();
   size_t n = this->vmas_.size();
   for (size_t i = 0; i != n; ++ i) {
 
@@ -100,19 +100,10 @@ void Process::load_modules()
     if (vma.name.empty() || vma.name[0] == '[')
       continue;
 
-    // Find the end of the module:
-    do { ++i; } while (i != n && this->vmas_[i].name == vma.name);
-    if (this->vmas_[i].name.empty() && i != n)
-      ++i;
-    std::uint64_t end = this->vmas_[i - 1].end;
-
-    std::shared_ptr<Module> module = load_module(vma.name);
-
-    ModuleArea area;
-    area.start = vma.start;
-    area.end = end;
-    area.module = std::move(module);
-    this->areas_.push_back(std::move(area));
+    Module module = load_module(vma.start, vma.name);
+    if (!module.name.empty())
+      this->modules_.push_back(std::move(module));
+    while (i + 1 < n && this->vmas_[i + 1].name == vma.name) ++i;
   }
 }
 
@@ -148,16 +139,10 @@ const char* Process::lookup_symbol(std::uint64_t ReferenceValue)
     if (i != this->jit_symbols_.end())
       return i->second.name.c_str();
   }
-
-  unjit::ModuleArea const* area = this->find_module_area(ReferenceValue);
-  if (area) {
-    std::uint64_t relative_address =
-      area->module->absolute_address ? ReferenceValue : ReferenceValue - area->start;
-    auto i = area->module->symbols.find(relative_address);
-    if (i != this->jit_symbols_.end())
-      return i->second.name.c_str();
-  }
-  return NULL;
+  const Symbol* symbol = this->find_symbol(ReferenceValue);
+  if (symbol != nullptr)
+    return symbol->name.c_str();
+  return nullptr;
 }
 
 }

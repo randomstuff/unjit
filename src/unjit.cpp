@@ -118,12 +118,11 @@ int main(int argc, const char** argv)
   process.load_map_file();
 
   unjit::Disassembler disassembler(process);
-  if (config.start == 0 && config.stop == 0) {
+  if (config.start == 0 && config.stop == 0)
     for (auto const& k : process.jit_symbols())
       disassembler.disassemble(std::cout, k.second.value, k.second.size);
-  } else {
+  else
     disassembler.disassemble(std::cout, config.start, config.stop - config.start);
-  }
 
   return 0;
 }
