@@ -41,6 +41,7 @@ THE SOFTWARE.
 struct Config {
   pid_t pid = -1;
   std::uint64_t start = 0, stop = 0;
+  bool all = false;
 };
 
 static unsigned long long int parse_integer(char const* value)
@@ -70,6 +71,7 @@ static int parse_config(Config& config, int argc, const char** argv)
     ("pid,p", value<pid_t>(), "PID of the target process")
     ("start-address", value<std::string>(), "Address")
     ("stop-address", value<std::string>(), "Address")
+    ("all", "Disassemble all symbols")
     ;
   variables_map vm;
   store(command_line_parser(argc, argv).options(desc).run(), vm);
@@ -86,6 +88,8 @@ static int parse_config(Config& config, int argc, const char** argv)
     config.start = parse_integer(vm["start-address"].as<std::string>().c_str());
   if (vm.count("stop-address"))
     config.stop = parse_integer(vm["stop-address"].as<std::string>().c_str());
+  if (vm.count("all"))
+    config.all = true;
 
   return 0;
 }
@@ -118,11 +122,17 @@ int main(int argc, const char** argv)
   process.load_map_file();
 
   unjit::Disassembler disassembler(process);
-  if (config.start == 0 && config.stop == 0)
-    for (auto const& k : process.jit_symbols())
-      disassembler.disassemble(std::cout, k.second.value, k.second.size);
-  else
+
+  if (config.all)
+    for (auto const& module : process.modules())
+      for (auto const& p : module.symbols)
+        if (p.second.flags & SYMBOL_FLAG_CODE)
+          disassembler.disassemble(std::cout, p.second.value, p.second.size);
+
+  if (config.start != 0)
     disassembler.disassemble(std::cout, config.start, config.stop - config.start);
+  else for (auto const& k : process.jit_symbols())
+    disassembler.disassemble(std::cout, k.second.value, k.second.size);
 
   return 0;
 }
