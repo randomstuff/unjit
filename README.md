@@ -8,7 +8,7 @@
 
 * based on LLVM disassembler;
 
-* by default disassmble all (JITed) subprograms found in `/tmp/perf-$pid.map`;
+* by default disassemble all (JITed) subprograms found in `/tmp/perf-$pid.map`;
 
 * symbolication of JIT-ed symbols using `/tmp/perf-$pid.map`;
 
@@ -65,10 +65,20 @@ Example:
 
 Without any specific order:
 
- * read symbols from DWARF (optional);
+* better detection of modules;
 
- * load DWARF info from a separate file;
+* disassemble by symbol name;
 
- * do not hardcode the CPU model (CLI option);
+* symbolicate GOT and PLT addresses;
 
- * select the native CPU model by default.
+* load symbols from `DT_SYMTAB`;
+
+* load symbols from DWARF (optional);
+
+* load DWARF info from a separate file;
+
+* do not hardcode the CPU model (CLI option);
+
+* select the native CPU model by default;
+
+* [Capstone](http://www.capstone-engine.org/) support.
