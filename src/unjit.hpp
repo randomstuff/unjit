@@ -81,10 +81,13 @@ public:
   }
 };
 
+#define SYMBOL_FLAG_CODE 1
+
 struct Symbol {
-  std::uint64_t value;
-  std::uint64_t size;
+  std::uint64_t value = 0;
+  std::uint64_t size = 0;
   std::string name;
+  std::uint32_t flags = 0;
 };
 
 struct Vma {

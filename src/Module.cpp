@@ -145,6 +145,7 @@ std::shared_ptr<Module> load_module(std::string const& name)
     Elf64_Section st_shndx = shdr64 ? sym64->st_shndx : sym32->st_shndx;
     Elf64_Addr st_value = shdr64 ? sym64->st_value : sym32->st_value;
     Elf64_Xword st_size = shdr64 ? sym64->st_size : sym32->st_size;
+    unsigned char st_type = shdr64 ? ELF64_ST_TYPE(sym64->st_info) : ELF32_ST_TYPE(sym32->st_info);
     if (st_shndx == SHN_UNDEF || st_shndx == SHN_ABS)
       continue;
     char *symbol_name = elf_strptr(elf.get(), sh_link, st_name);
@@ -155,6 +156,8 @@ std::shared_ptr<Module> load_module(std::string const& name)
     symbol.value = st_value;
     symbol.size = st_size;
     symbol.name = std::string(symbol_name);
+    if (st_type == STT_FUNC)
+      symbol.flags |= SYMBOL_FLAG_CODE;
     module->symbols[st_value] = std::move(symbol);
   }
 
