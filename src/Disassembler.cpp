@@ -59,9 +59,7 @@ Disassembler::Disassembler(Process& process) : process_(&process)
     throw std::runtime_error("Could not intialize LLVM disassembler");
   }
   LLVMSetDisasmOptions(this->disassembler_,
-    LLVMDisassembler_Option_SetInstrComments
-    | LLVMDisassembler_Option_PrintLatency
-    );
+    LLVMDisassembler_Option_PrintLatency);
 }
 
 Disassembler::~Disassembler()
