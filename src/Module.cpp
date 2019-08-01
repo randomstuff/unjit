@@ -68,9 +68,9 @@ static Elf64_Half elf_e_type(Elf *elf)
   Elf64_Ehdr* ehdr64 = elf64_getehdr(elf);
   Elf64_Half e_type;
   if (ehdr32)
-    e_type = ehdr32->e_type;
+    return ehdr32->e_type;
   else if (ehdr64)
-    e_type = ehdr64->e_type;
+    return ehdr64->e_type;
   else
     return ET_NONE;
 }
