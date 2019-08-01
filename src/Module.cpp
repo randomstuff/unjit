@@ -66,7 +66,6 @@ static Elf64_Half elf_e_type(Elf *elf)
 {
   Elf32_Ehdr* ehdr32 = elf32_getehdr(elf);
   Elf64_Ehdr* ehdr64 = elf64_getehdr(elf);
-  Elf64_Half e_type;
   if (ehdr32)
     return ehdr32->e_type;
   else if (ehdr64)
@@ -116,7 +115,6 @@ Module load_module(std::uint64_t start, std::string const& name)
   Elf_Scn *symbol_scn = elf_scn_symbol(elf.get());
   if (!symbol_scn)
     return std::move(module);
-  size_t symbol_index = elf_ndxscn(symbol_scn);
 
   Elf32_Shdr *shdr32 = elf32_getshdr(symbol_scn);
   Elf64_Shdr *shdr64 = elf64_getshdr(symbol_scn);
@@ -135,7 +133,7 @@ Module load_module(std::uint64_t start, std::string const& name)
   // For each element in the symbol table (we skip the first element with
   // is always a NULL entry):
   Elf_Data *data = elf_getdata(symbol_scn, NULL);
-  for (int i = 1; i != sh_entry_count; ++i) {
+  for (uint64_t i = 1; i != sh_entry_count; ++i) {
     Elf64_Sym *sym64 = shdr64 ? (Elf64_Sym*) data->d_buf + i : nullptr;
     Elf32_Sym *sym32 = shdr64 ? nullptr : (Elf32_Sym*) data->d_buf + i;
 

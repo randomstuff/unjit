@@ -117,14 +117,12 @@ void Process::load_map_file()
 void Process::load_map_file(std::string const& map_file)
 {
   std::ifstream file(map_file);
-
-  size_t size = 256;
   std::string line;
   while (getline(file, line)) {
     Symbol symbol;
     int name_index;
     if (sscanf(line.c_str(), "%" SCNx64 " %" SCNx64 "%n", &symbol.value, &symbol.size, &name_index) == 2) {
-      while (name_index < line.size() && line[name_index] == ' ')
+      while ((std::string::size_type) name_index < line.size() && line[name_index] == ' ')
         ++name_index;
       symbol.name = std::string(line.c_str() + name_index);
       this->jit_symbols_[symbol.value] = std::move(symbol);

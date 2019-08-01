@@ -102,7 +102,7 @@ int main(int argc, const char** argv)
     if (res)
       return res;
   }
-  catch(boost::program_options::unknown_option) {
+  catch(boost::program_options::unknown_option& exception) {
     std::cerr << "Unknown option\n";
     return 1;
   }

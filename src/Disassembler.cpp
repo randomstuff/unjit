@@ -101,7 +101,7 @@ void Disassembler::disassemble(std::ostream& stream, const char* name, std::uint
   remote.iov_base = (void*) start;
   remote.iov_len = size;
 
-  if (process_vm_readv(this->process_->pid(), &local, 1, &remote, 1, 0) != size) {
+  if (process_vm_readv(this->process_->pid(), &local, 1, &remote, 1, 0) == -1) {
     // TODO, return/throw error
     std::cerr << "Error, could not read the instructions for " << name << '\n';
     return;
