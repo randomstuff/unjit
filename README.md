@@ -1,5 +1,6 @@
 # unjit
 
+
 ## Overview
 
 ### Features
@@ -23,6 +24,11 @@
 
 * currently working on Linux 3.2 (`process_vm_readv()`) and a suitable libc
 
+### Limitations
+
+- Currently do not decompile code which does not have an associated symbol.
+
+
 ## Usage
 
 ### Basic usage
@@ -43,11 +49,12 @@ unjit -p $pid > dis.txt
 perf top -p $pid --objdump ./perfobjdump
 ~~~
 
+
 ## Discussion
 
-### Linux `perf` map (`/tmp/perf-$pid.map`)
+### Linux `perf` map (`/tmp/perf-${pid}.map`)
 
-The `/tmp/perf-$pid.map` is a file used by JIT compilers to tell Linux
+The `/tmp/perf-${pid}.map` is a file used by JIT compilers to tell Linux
 perf the location and name of JITed subprograms. The format is:
 
 ~~~
@@ -61,11 +68,12 @@ Example:
 41f3aec6 52 bar
 ~~~
 
+
 ## Roadmap
 
 Without any specific order:
 
-* better detection of modules;
+* better detection of modules (`DT_DEBUG`);
 
 * disassemble by symbol name;
 
