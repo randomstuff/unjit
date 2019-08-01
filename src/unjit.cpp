@@ -111,11 +111,13 @@ int main(int argc, const char** argv)
     return 1;
   }
 
+  // Initialize LLVM:
   LLVMInitializeAllTargetInfos();
   LLVMInitializeAllTargetMCs();
   LLVMInitializeAllDisassemblers();
   LLVMInitializeNativeDisassembler();
 
+  // Get informations about the process:
   unjit::Process process(config.pid);
   process.load_vm_maps();
   process.load_modules();
@@ -123,15 +125,27 @@ int main(int argc, const char** argv)
 
   unjit::Disassembler disassembler(process);
 
+  // If a region was given, decompiler it:
+  if (config.start != 0) {
+    if (config.stop <= config.start) {
+      std::cerr << "Bad stop address\n";
+      return 1;
+    }
+    disassembler.disassemble(std::cout, config.start, config.stop - config.start);
+    return 0;
+  }
+
+  // "--all", decompile all symbols from all ELF files.
+  // Currently, we don't try to decompile code which is not referenced
+  // in the symbol tables.
   if (config.all)
     for (auto const& module : process.modules())
       for (auto const& p : module.symbols)
         if (p.second.flags & SYMBOL_FLAG_CODE)
           disassembler.disassemble(std::cout, p.second.value, p.second.size);
 
-  if (config.start != 0)
-    disassembler.disassemble(std::cout, config.start, config.stop - config.start);
-  else for (auto const& k : process.jit_symbols())
+  // Decompile all known JIT-ed symbols:
+  for (auto const& k : process.jit_symbols())
     disassembler.disassemble(std::cout, k.second.value, k.second.size);
 
   return 0;

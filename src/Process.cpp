@@ -45,6 +45,14 @@ Process::~Process()
 
 void Process::load_vm_maps()
 {
+  /* We load the VAS layout from /proc/${pid}/maps
+
+     Reference
+     ---------
+
+     https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+  */
+
   vmas_.clear();
   std::string filename =
     std::string("/proc/") + std::to_string(this->pid_) + std::string("/maps");
@@ -92,6 +100,11 @@ void Process::load_vm_maps()
 
 void Process::load_modules()
 {
+  /* Derive ELF modules from the VAS layout.
+     The correct way to do this would be to use
+     /proc/${pid}/auxv, AT_BASE and DT_DEBUG.
+  */
+
   this->modules_.clear();
   size_t n = this->vmas_.size();
   for (size_t i = 0; i != n; ++ i) {
@@ -128,6 +141,16 @@ void Process::load_map_file(std::string const& map_file)
       this->jit_symbols_[symbol.value] = std::move(symbol);
     }
   }
+}
+
+Symbol const* Process::find_symbol(std::uint64_t address) const
+{
+  for (Module const& module : modules_) {
+    auto i = module.symbols.find(address);
+    if (i != module.symbols.end())
+      return &i->second;
+  }
+  return nullptr;
 }
 
 const char* Process::lookup_symbol(std::uint64_t ReferenceValue)

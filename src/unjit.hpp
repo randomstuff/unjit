@@ -40,6 +40,7 @@ THE SOFTWARE.
 
 namespace unjit {
 
+/* File descriptor with RAII */
 struct FileDescriptor {
 private:
   int fd_;
@@ -83,6 +84,7 @@ public:
 
 #define SYMBOL_FLAG_CODE 1
 
+/* A symbol in the process */
 struct Symbol {
   std::uint64_t value = 0;
   std::uint64_t size = 0;
@@ -90,6 +92,10 @@ struct Symbol {
   std::uint32_t flags = 0;
 };
 
+/* Virtual Memory Area
+
+   A region of the process virtual address space.
+*/
 struct Vma {
   uint64_t start, end;
   int prot; // PROT_EXEC, PROT_READ, PROT_WRITE, PROT_NONE
@@ -100,6 +106,7 @@ struct Vma {
 
 std::ostream& operator<<(std::ostream& stream, Vma const& vma);
 
+/* An ELF file mapped in the process */
 struct Module {
   std::string name;
   std::unordered_map<std::uint64_t, Symbol> symbols;
@@ -107,6 +114,7 @@ struct Module {
 
 Module load_module(std::uint64_t start, std::string const& name);
 
+/* Target (disassembled) process */
 class Process {
 private:
   pid_t pid_;
@@ -117,11 +125,22 @@ private:
 public:
   Process(pid_t pid);
   ~Process();
+
+  /* Load virtual address space information (VMAs) */
   void load_vm_maps();
+
+  /** Load informations about each ELF module (symbols) */
   void load_modules();
+
+  /* Load JIT symbols from /tmp/perf-${pid}.map */
   void load_map_file();
+
+  /* Load JIT symbols from a perf.map file */
   void load_map_file(std::string const& map_file);
+
+  /* Get symbol name from address */
   const char* lookup_symbol(uint64_t ReferenceValue);
+
   std::vector<Module> const& modules() const { return modules_; }
 
   std::unordered_map<std::uint64_t, Symbol> const& jit_symbols()
@@ -134,20 +153,8 @@ public:
     return pid_;
   }
 
-  std::vector<Vma> vm_maps()
-  {
-    return vmas_;
-  }
-
-  Symbol const* find_symbol(std::uint64_t address) const
-  {
-    for (Module const& module : modules_) {
-      auto i = module.symbols.find(address);
-      if (i != module.symbols.end())
-        return &i->second;
-    }
-    return nullptr;
-  }
+private:
+  Symbol const* find_symbol(std::uint64_t address) const;
 
 };
 
